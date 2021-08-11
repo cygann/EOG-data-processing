@@ -45,13 +45,22 @@ def save_comments_to_csv(comments, pathname):
     df = pd.DataFrame(comments)
     df.to_csv(pathname, index=False)
 
-def process_all_nev_to_csv(data_dir='mat_files'):
+def process_all_nev_to_csv(data_dir='blackrock_data/mat_files'):
     files = glob.glob(data_dir + '/*NEV.mat', recursive=True)
 
     for f in files:
         num = f[-11:-8]
-        nev = sio.loadmat(nev_path)
+        nev = sio.loadmat(f)
         comments = get_comments(nev)
 
         comment_path = "OE_recording_Blackrock" + num + "_comments.csv"
         save_comments_to_csv(comments, comment_path)
+
+def load_comments_from_csv(filename, path='blackrock_data/comment_csv/'):
+
+    fullpath = os.path.join(path, filename)
+    df = pd.read_csv(fullpath)
+    comments = df.to_dict()
+
+    return comments
+
