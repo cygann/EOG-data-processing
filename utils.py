@@ -29,9 +29,9 @@ def get_comments(nev):
 def get_data(nsx, mode='NS6'):
     """
     Extracts the raw EOG data from the NSx object. 
-    Returns a (1, N) array of data.
+    Returns a (N, ) array of data.
     """
-    data = nsx[mode]['Data'][0][0]
+    data = nsx[mode]['Data'][0][0][0]
     return data
 
 def plot_data(data, comments):
@@ -40,7 +40,7 @@ def plot_data(data, comments):
                     # mode='lines'))
     # fig.show()
 
-    plt.plot(np.arange(data.shape[1]), data[0,:], label="EOG Data")
+    plt.plot(np.arange(data.shape[0]), data, label="EOG Data")
 
 def save_comments_to_csv(comments, pathname):
     df = pd.DataFrame(comments)
@@ -108,5 +108,9 @@ def find_condition_endpoints(comments):
 
 
     return conditions
+
+def get_condition_slice(conditions, key, data):
+    # slice_data = data[:, 
+    pass
 
 
