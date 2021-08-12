@@ -109,8 +109,10 @@ def find_condition_endpoints(comments):
 
     return conditions
 
-def get_condition_slice(conditions, key, data):
-    # slice_data = data[:, 
-    pass
+def get_condition_slice(cond, key, data):
+    slice_data = data[cond[key]['start']:cond[key]['end']]
+    return slice_data
 
-
+def get_slice(data, start, end):
+    slice_data = data[start:end]
+    return slice_data
