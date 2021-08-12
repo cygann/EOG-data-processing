@@ -1,10 +1,11 @@
+import glob
+import os
+
 import numpy as np
 import scipy.io as sio
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import pandas as pd
-import glob
-
 
 BLACKROCK_DATA_DIR = 'blackrock_data'
 
@@ -63,4 +64,31 @@ def load_comments_from_csv(filename, path='blackrock_data/comment_csv/'):
     comments = df.to_dict()
 
     return comments
+
+def find_condition_endpoints(comments):
+
+    conditions = {}
+    prev_key = None
+    for i in comments['text']:
+        text = comments['text'][i]
+        start = comments['start'][i]
+        end = comments['end'][i]
+        text_l = text.lower()
+
+        # This indicates the start of a new scent condition
+        if 'scent' in text_l:
+            # The end time for the scent comment indicates the time at which the
+            # smell was presented
+            conditions[text_l] = {}
+            conditions[text_l]['start'] = end
+            prev_key = text_l
+
+        # This indicates the point in which the scent stimuli was removed
+        elif 'removed' in text_l:
+            # The start time for the 'Removed' comment indicates the time at
+            # which the smell was removed.
+            conditions[prev_key]['end'] = start
+
+    return conditions
+
 
