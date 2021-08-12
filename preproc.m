@@ -3,7 +3,7 @@
 % to select the file of interest, so this must be done for each recorded 
 % session.
 openNEV();
-openNSx();
+openNSx('uv');
 
 disp("Loaded NEV and NS6 files");
 

@@ -68,12 +68,15 @@ def load_comments_from_csv(filename, path='blackrock_data/comment_csv/'):
 def find_condition_endpoints(comments):
 
     conditions = {}
-    prev_key = None
+    prev_key = ''
     for i in comments['text']:
         text = comments['text'][i]
         start = comments['start'][i]
         end = comments['end'][i]
         text_l = text.lower()
+
+        if '!eb' in prev_key:
+            conditions[prev_key]['end'] = start
 
         # This indicates the start of a new scent condition
         if 'scent' in text_l:
@@ -88,6 +91,21 @@ def find_condition_endpoints(comments):
             # The start time for the 'Removed' comment indicates the time at
             # which the smell was removed.
             conditions[prev_key]['end'] = start
+
+        elif '!sb' in text_l:
+            conditions[text_l] = {}
+            conditions[text_l]['start'] = end
+            prev_key = text_l
+
+        elif '!eb' in text_l:
+            conditions[prev_key]['end'] = start
+
+            conditions[text_l] = {}
+            conditions[text_l]['start'] = end
+            prev_key = text_l
+
+
+
 
     return conditions
 
