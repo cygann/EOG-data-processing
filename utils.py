@@ -36,14 +36,22 @@ def get_data(nsx, mode='NS6'):
     data = nsx[mode]['Data'][0][0][0]
     return data
 
-def plot_data(data, label=None):
+def plot_data(data, label=None, xlabel='sample # (sample rate: 30kHz)',
+        ylabel='uV', freq=None):
     # fig = go.Figure()
     # fig.add_trace(go.Scatter(x=np.arange(data.shape[1]), y=data,
                     # mode='lines'))
     # fig.show()
 
-    plt.plot(np.arange(data.shape[0]), data, label=label)
+    if freq is not None:
+        x = freq
+    else:
+        x = np.arange(data.shape[0])
+
+    plt.plot(x, data, label=label, alpha=0.75)
     plt.legend()
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
 
 def save_comments_to_csv(comments, pathname):
     df = pd.DataFrame(comments)
@@ -112,6 +120,7 @@ def get_slice(data, start, end):
     return slice_data
 
 def plot_fft(data_samples, labels=None):
+
     # Truncate everything to the size of the smallest sample
     size = data_samples[0].shape[0]
     for ds in data_samples:
@@ -119,11 +128,12 @@ def plot_fft(data_samples, labels=None):
         if s < size:
             size = s
 
+    freq = np.fft.rfftfreq(size) * 30000
     for i, ds in enumerate(data_samples):
         fft = np.fft.rfft(ds[:size])
         fft = np.abs(fft)
         label = None if labels is None else labels[i]
-        plot_data(fft, label)
+        plot_data(fft, label=label, freq=freq)
 
 def plot_conditions_fft(cond, data, keys=None):
     """
@@ -142,4 +152,27 @@ def plot_conditions_fft(cond, data, keys=None):
         key_set = cond.keys()
 
     slices = [get_condition_slice(cond, key, data) for key in key_set]
+    plot_fft(slices, key_set)
+
+def plot_recording_conditions_fft(recordings, keys):
+    """
+    Plots the fft results for every condition specified in keys. 
+    Inputs:
+    - recordings: dictionary of all recordings
+    - keys: dict of recordings that stores all the keys in a specific recording
+            that should be plotted, as a list. 
+    """
+    # pdb.set_trace()
+
+    slices = []
+    key_set = []
+
+    for rec_id in keys:
+        for condition in keys[rec_id]:
+            cond_slice = get_condition_slice(recordings[rec_id]['cond'], condition,
+                                                recordings[rec_id]['data']) 
+            slices.append(cond_slice)
+            key_set.append(rec_id + ': ' + condition)
+
+
     plot_fft(slices, key_set)
