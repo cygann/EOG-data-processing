@@ -1,5 +1,6 @@
 import glob
 import os
+import pickle
 
 import numpy as np
 import scipy.io as sio
@@ -75,9 +76,6 @@ def find_condition_endpoints(comments):
         end = comments['end'][i]
         text_l = text.lower()
 
-        if '!eb' in prev_key:
-            conditions[prev_key]['end'] = start
-
         # This indicates the start of a new scent condition
         if 'scent' in text_l:
             # The end time for the scent comment indicates the time at which the
@@ -92,22 +90,16 @@ def find_condition_endpoints(comments):
             # which the smell was removed.
             conditions[prev_key]['end'] = start
 
-        elif '!sb' in text_l:
-            conditions[text_l] = {}
-            conditions[text_l]['start'] = end
-            prev_key = text_l
-
-        elif '!eb' in text_l:
-            conditions[prev_key]['end'] = start
-
-            conditions[text_l] = {}
-            conditions[text_l]['start'] = end
-            prev_key = text_l
-
-
-
-
     return conditions
+
+def save_conditions_to_file(cond, filename, outdir='blackrock_data/conditions'):
+    outpath = os.path.join(outdir, filename)
+    pickle.dump(cond, open(outpath, 'wb'))
+
+def load_conditions_from_file(filename, cond_dir='blackrock_data/conditions'):
+    outpath = os.path.join(cond_dir, filename)
+    cond = pickle.load(open(outpath, 'rb'))
+    return cond
 
 def get_condition_slice(cond, key, data):
     slice_data = data[cond[key]['start']:cond[key]['end']]
@@ -116,3 +108,16 @@ def get_condition_slice(cond, key, data):
 def get_slice(data, start, end):
     slice_data = data[start:end]
     return slice_data
+
+def plot_fft(data_samples):
+    # Truncate everything to the size of the smallest sample
+    size = data_samples[0].shape[0]
+    for ds in data_samples:
+        s = ds.shape[0]
+        if s < size:
+            size = s
+
+    for ds in data_samples:
+        fft = np.fft.rfft(ds[:size])
+        plot_data(fft, None)
+
