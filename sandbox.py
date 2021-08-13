@@ -25,8 +25,8 @@ def load_recording(rec_id):
     # comments = util.get_comments(nev)
     comments = util.load_comments_from_csv(comment_path)
 
-    cond_path = os.path.join(COND_DIR, rec_id + ".pkl")
-    cond = util.load_conditions_from_file(cond_path)
+    cond_file = rec_id + ".pkl"
+    cond = util.load_conditions_from_file(cond_file)
 
     # If there is no conditions file saved, then auto generate the conditions 
     # from the comments

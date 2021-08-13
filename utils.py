@@ -1,6 +1,7 @@
 import glob
 import os
 import pickle
+import pdb
 
 import numpy as np
 import scipy.io as sio
@@ -35,13 +36,14 @@ def get_data(nsx, mode='NS6'):
     data = nsx[mode]['Data'][0][0][0]
     return data
 
-def plot_data(data, comments):
+def plot_data(data, label=None):
     # fig = go.Figure()
     # fig.add_trace(go.Scatter(x=np.arange(data.shape[1]), y=data,
                     # mode='lines'))
     # fig.show()
 
-    plt.plot(np.arange(data.shape[0]), data, label="EOG Data")
+    plt.plot(np.arange(data.shape[0]), data, label=label)
+    plt.legend()
 
 def save_comments_to_csv(comments, pathname):
     df = pd.DataFrame(comments)
@@ -109,7 +111,7 @@ def get_slice(data, start, end):
     slice_data = data[start:end]
     return slice_data
 
-def plot_fft(data_samples):
+def plot_fft(data_samples, labels=None):
     # Truncate everything to the size of the smallest sample
     size = data_samples[0].shape[0]
     for ds in data_samples:
@@ -117,7 +119,27 @@ def plot_fft(data_samples):
         if s < size:
             size = s
 
-    for ds in data_samples:
+    for i, ds in enumerate(data_samples):
         fft = np.fft.rfft(ds[:size])
-        plot_data(fft, None)
+        fft = np.abs(fft)
+        label = None if labels is None else labels[i]
+        plot_data(fft, label)
 
+def plot_conditions_fft(cond, data, keys=None):
+    """
+    Plots the fft results for every condition specified in keys. 
+    Inputs:
+    - cond: dictionary of conditions
+    - data: the raw data of the recording
+    - keys: list of keys (conditions) that should be plotted. If none, then this
+            plots all conditions in cond.
+    """
+    # pdb.set_trace()
+
+    if keys is not None:
+        key_set = keys
+    else: 
+        key_set = cond.keys()
+
+    slices = [get_condition_slice(cond, key, data) for key in key_set]
+    plot_fft(slices, key_set)
