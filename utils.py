@@ -50,8 +50,23 @@ def plot_data(data, label=None, xlabel='sample # (sample rate: 30kHz)',
 
     plt.plot(x, data, label=label, alpha=0.75)
     plt.legend()
+
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+
+def plot_data_plotly(data, fig, label=None, xlabel='sample # (sample rate: 30kHz)',
+        ylabel='uV', freq=None):
+
+    if freq is not None:
+        x = freq
+    else:
+        x = np.arange(data.shape[0])
+
+    # fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x, y=data,
+                    mode='lines', name=label))
+    fig.update_layout(xaxis_title=xlabel, yaxis_title=ylabel)
+    # fig.show()
 
 def save_comments_to_csv(comments, pathname):
     df = pd.DataFrame(comments)
@@ -119,7 +134,7 @@ def get_slice(data, start, end):
     slice_data = data[start:end]
     return slice_data
 
-def plot_fft(data_samples, labels=None):
+def plot_fft(data_samples, labels=None, use_plotly=None):
 
     # Truncate everything to the size of the smallest sample
     size = data_samples[0].shape[0]
@@ -133,9 +148,14 @@ def plot_fft(data_samples, labels=None):
         fft = np.fft.rfft(ds[:size])
         fft = np.abs(fft)
         label = None if labels is None else labels[i]
-        plot_data(fft, label=label, freq=freq)
+        if use_plotly is not None:
+            plot_data_plotly(fft, fig=use_plotly, label=label, freq=freq, xlabel='Frequency',
+                ylabel='Power')
+        else:
+            plot_data(fft, label=label, freq=freq, xlabel='Frequency',
+                ylabel='Power')
 
-def plot_conditions_fft(cond, data, keys=None):
+def plot_conditions_fft(cond, data, keys=None, use_plotly=None):
     """
     Plots the fft results for every condition specified in keys. 
     Inputs:
@@ -152,9 +172,9 @@ def plot_conditions_fft(cond, data, keys=None):
         key_set = cond.keys()
 
     slices = [get_condition_slice(cond, key, data) for key in key_set]
-    plot_fft(slices, key_set)
+    plot_fft(slices, key_set, use_plotly=use_plotly)
 
-def plot_recording_conditions_fft(recordings, keys):
+def plot_recording_conditions_fft(recordings, keys, use_plotly=None):
     """
     Plots the fft results for every condition specified in keys. 
     Inputs:
@@ -175,4 +195,13 @@ def plot_recording_conditions_fft(recordings, keys):
             key_set.append(rec_id + ': ' + condition)
 
 
-    plot_fft(slices, key_set)
+    plot_fft(slices, key_set, use_plotly=use_plotly)
+
+def plot_raw_from_dict(recordings, keys):
+
+    for rec_id in keys:
+        for condition in keys[rec_id]:
+            label_txt = rec_id + ': ' + condition
+            plot_data(get_condition_slice(recordings[rec_id]['cond'], condition,
+                recordings[rec_id]['data']), label=label_txt)
+
