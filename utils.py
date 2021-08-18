@@ -222,3 +222,67 @@ def plot_recording_raw(recs, rec, plotly_fig):
             recs[rec]['data']), fig=plotly_fig, label=rec + ': ' + c)
 
 
+def plotly_fft_and_raw(recs):
+    # Plot fft
+    fig = go.Figure()
+    plot_recording_conditions_fft(recs, {'006': [c for c in
+        recs['006']['cond']]}, fig)
+    fig.show()
+
+    # Plot raw
+    fig = go.Figure()
+    plot_recording_raw(recs, '006', fig)
+    fig.show()
+
+def get_min_length(recs, keys):
+    """
+    Get the minimum length of all the event conditions specified by the keys
+    dictionary.
+    Inputs:
+    - recs: recordings dictionary
+    - keys: dictionary of rec_ids -> list of desired conditions
+    """
+
+    slices = []
+
+    min_len = -1
+    for rec_id in keys:
+        for condition in keys[rec_id]:
+            cond_slice = get_condition_slice(recs[rec_id]['cond'], condition,
+                                                recs[rec_id]['data']) 
+            slices.append(cond_slice)
+            slice_size = cond_slice.shape[0]
+            print('<' + rec_id + ': ' + condition + '> has length ' + str(slice_size))
+
+            if slice_size < min_len or min_len == -1:
+                min_len = slice_size
+
+
+    print('Min length of condition:', min_len)
+    return min_len
+
+def add_keys_to_dict(old_keys, new_keys):
+    """
+    Puts the new keys into the old keys dict
+    """
+
+    for rec_id in new_keys:
+        if rec_id not in old_keys:
+            old_keys[rec_id] = []
+
+        for cond in new_keys[rec_id]:
+            if cond in old_keys[rec_id]: pass
+            else: old_keys[rec_id].append(cond)
+
+def custom_condition_keys(recs):
+    # base_keys = {'006': [c for c in recs['006']['cond']]}
+    no_breathe = {'006': ['hold breath'], '007': ['hold breath'], '003': ['no breathing']}
+    breathe = {'001': ['nose breathing'], '003': ['nose breathe'], '007': ['breathing', 'breathing 2'], '011': ['breathing']}
+
+    new_keys = {}
+    add_keys_to_dict(new_keys, no_breathe)
+    add_keys_to_dict(new_keys, breathe)
+
+    return new_keys
+
+
