@@ -5,6 +5,7 @@ Script for compression experiment.
 import numpy as np
 import utils as util
 from pathlib import Path
+import gzip
 
 def compression_experiment(recs, keys):
     """
@@ -21,14 +22,23 @@ def compression_experiment(recs, keys):
                     recs[rec_id]['data'])[:min_length]
 
             data_bytes = data_slice.tobytes()
+            data_bytes_compressed = gzip.compress(data_bytes)
+
+            size_raw = len(data_bytes)
+            size_gz = len(data_bytes_compressed)
     
             # Get file size (in bytes) without compression 
-            np.savetxt('slice.npy', data_slice)
-            size_raw = Path('slice.npy').stat().st_size
+            # f = open('slice.txt', 'wb')
+            # f.write(data_bytes)
+            # f.close()
+            # size_raw = Path('slice.txt').stat().st_size
 
             # Get file size (in bytes) with compression 
-            np.savetxt('slice.gz', data_slice)
-            size_gz = Path('slice.gz').stat().st_size
+            # np.savetxt('slice.gz', data_slice)
+            # f = open('slice.gz', 'wb')
+            # f.write(data_bytes)
+            # f.close()
+            # size_gz = Path('slice.gz').stat().st_size
 
             ratio = size_gz / size_raw
 
@@ -36,5 +46,7 @@ def compression_experiment(recs, keys):
                     ' compressed size: ' + str(size_gz) + ' ratio: ' + \
                     str(ratio))
 
-            if rec_id not in compression_results:
-                compression_results['rec_id'] = {}
+            compression_results[rec_id + ": " + cond] = {'raw': size_raw,
+                    'comp': size_gz}
+
+    return compression_results
