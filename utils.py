@@ -197,11 +197,28 @@ def plot_recording_conditions_fft(recordings, keys, use_plotly=None):
 
     plot_fft(slices, key_set, use_plotly=use_plotly)
 
-def plot_raw_from_dict(recordings, keys):
+def plot_raw_from_dict(recordings, keys, use_plotly=None):
+
+    if use_plotly is not None:
+        print('Plotting with plotly')
 
     for rec_id in keys:
         for condition in keys[rec_id]:
             label_txt = rec_id + ': ' + condition
-            plot_data(get_condition_slice(recordings[rec_id]['cond'], condition,
-                recordings[rec_id]['data']), label=label_txt)
+
+            if use_plotly is not None:
+                plot_data_plotly(get_condition_slice(recordings[rec_id]['cond'], condition,
+                    recordings[rec_id]['data']), fig=use_plotly, label=label_txt)
+            else:
+                plot_data(get_condition_slice(recordings[rec_id]['cond'], condition,
+                    recordings[rec_id]['data']), label=label_txt)
+
+def plot_recording_raw(recs, rec, plotly_fig):
+
+    conds = recs[rec]['cond']
+
+    for c in conds:
+        plot_data_plotly(get_condition_slice(recs[rec]['cond'], c,
+            recs[rec]['data']), fig=plotly_fig, label=rec + ': ' + c)
+
 
