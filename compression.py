@@ -42,3 +42,25 @@ def compression_experiment(recs, keys):
                     'comp': size_gz}
 
     return compression_results
+
+def plot_compression_results(result):
+
+    # pdb.set_trace()
+
+    fig = go.Figure()
+    conds = []
+    ratios = []
+    for item in result:
+        ratio = result[item]['comp'] / result[item]['raw']
+        ratios.append(ratio)
+        conds.append(item)
+
+    fig.add_trace(go.Scatter(x=ratios, y=conds, 
+        name='Compression ratio (gz size / raw size)',
+        mode='markers'))
+
+    fig.update_layout(title='Compressibility by recording condition',
+                        xaxis_title='Compressibility ratio (gz size / raw size)',
+                        yaxis_title='Recording condition')
+    fig.show()
+        

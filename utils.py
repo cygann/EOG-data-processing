@@ -275,14 +275,24 @@ def add_keys_to_dict(old_keys, new_keys):
             else: old_keys[rec_id].append(cond)
 
 def custom_condition_keys(recs):
-    base_keys = {'006': [c for c in recs['006']['cond']]}
+
+    # rec_keys = [c for c in recs['006']['cond']]
+    # rec_keys_sorted = sorted(rec_keys, 
+            # key=lambda x: recs['006']['cond'][x]['start'])
+    # base_keys = {'006': rec_keys_sorted}
+
+    rec_keys = [c for c in recs['013']['cond']]
+    rec_keys_sorted = sorted(rec_keys, 
+            key=lambda x: recs['013']['cond'][x]['start'])
+    base_keys = {'013': rec_keys_sorted}
+
     no_breathe = {'006': ['hold breath'], '007': ['hold breath'], '003': ['no breathing']}
     breathe = {'001': ['nose breathing'], '003': ['nose breathe'], '007': ['breathing', 'breathing 2'], '011': ['breathing']}
 
     new_keys = {}
+    add_keys_to_dict(new_keys, base_keys)
     add_keys_to_dict(new_keys, no_breathe)
     add_keys_to_dict(new_keys, breathe)
-    add_keys_to_dict(new_keys, base_keys)
 
     return new_keys
 
