@@ -66,28 +66,51 @@ def plot_compression_results(result):
     fig.show()
         
 
-def compress_recording(data, window_size=90000):
+def compress_recording(data, window_size=90000, sliding=False):
 
     comp_ratios = []
 
     num_slices = data.shape[0] // window_size
 
-    for i in tqdm(range(num_slices)):
+    if not sliding:
+        for i in tqdm(range(num_slices)):
 
-        # Snip data slice, convert to bytes
-        data_slice = data[i * window_size: i * window_size + window_size]
-        data_slice = data_slice.astype('float32')
-        data_bytes = data_slice.tobytes()
+            # Snip data slice, convert to bytes
+            data_slice = data[i * window_size: i * window_size + window_size]
+            data_slice = data_slice.astype('float32')
+            data_bytes = data_slice.tobytes()
 
-        # Compress
-        data_bytes_compressed = gzip.compress(data_bytes)
+            # Compress
+            data_bytes_compressed = gzip.compress(data_bytes)
 
-        # Get raw size, ratio size
-        size_raw = len(data_bytes)
-        size_gz = len(data_bytes_compressed)
-        ratio = size_gz / size_raw
+            # Get raw size, ratio size
+            size_raw = len(data_bytes)
+            size_gz = len(data_bytes_compressed)
+            ratio = size_gz / size_raw
 
-        comp_ratios.append(ratio)
+            comp_ratios.append(ratio)
+    else:
+        start = 0
+        inc = 4000
+        num_slices = data.shape[0] // inc
+
+        for i in tqdm(range(num_slices)):
+            # Snip data slice, convert to bytes
+            data_slice = data[start:start + window_size]
+            data_slice = data_slice.astype('float32')
+            data_bytes = data_slice.tobytes()
+
+            # Compress
+            data_bytes_compressed = gzip.compress(data_bytes)
+
+            # Get raw size, ratio size
+            size_raw = len(data_bytes)
+            size_gz = len(data_bytes_compressed)
+            ratio = size_gz / size_raw
+
+            comp_ratios.append(ratio)
+            start += inc
+
     
     return comp_ratios
 
