@@ -69,6 +69,7 @@ def plot_compression_results(result):
 def compress_recording(data, window_size=90000, sliding=False):
 
     comp_ratios = []
+    timestamps = []
 
     num_slices = data.shape[0] // window_size
 
@@ -89,6 +90,7 @@ def compress_recording(data, window_size=90000, sliding=False):
             ratio = size_gz / size_raw
 
             comp_ratios.append(ratio)
+            timestamps.append(i * window_size)
     else:
         start = 0
         inc = 4000
@@ -109,22 +111,44 @@ def compress_recording(data, window_size=90000, sliding=False):
             ratio = size_gz / size_raw
 
             comp_ratios.append(ratio)
+            timestamps.append(start)
             start += inc
 
     
-    return comp_ratios
+    return comp_ratios, timestamps
 
-def plot_ratios(ratios):
+def plot_ratios(ratios, timestamps, events=None):
 
     np_ratios = np.asarray(ratios)
+    np_tstamps = np.asarray(timestamps)
     fig = go.Figure()
+    n = np_ratios.shape[0]
 
-    fig.add_trace(go.Scatter(x=np.arange(np_ratios.shape[0]), y=np_ratios, 
+    fig.add_trace(go.Scatter(x=np_tstamps, y=np_ratios, 
         name='Compression ratio (gz size / raw size)',
         mode='markers'))
 
     fig.update_layout(title='Compressibility over EOG recording',
                         yaxis_title='Compressibility ratio (gz size / raw size)',
-                        xaxis_title='Recording samples')
+                        xaxis_title='Recording sample window start')
+
+    if events is not None:
+        min_y = np.min(np_ratios)
+
+        xvals = []
+        event_labels = []
+        for event in events:
+            xvals.append(events[event]['start'])
+            xvals.append(events[event]['end'])
+            event_labels.append(event)
+            event_labels.append(event)
+
+            xvals.append(None)
+            event_labels.append(None)
+
+        fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
+            name='Events'))
+
+
     fig.show()
 
