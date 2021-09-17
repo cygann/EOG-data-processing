@@ -135,20 +135,16 @@ def plot_ratios(ratios, timestamps, events=None):
     if events is not None:
         min_y = np.min(np_ratios)
 
-        xvals = []
-        event_labels = []
         for event in events:
+            xvals = []
+
             xvals.append(events[event]['start'])
             xvals.append(events[event]['end'])
-            event_labels.append(event)
-            event_labels.append(event)
 
-            xvals.append(None)
-            event_labels.append(None)
-
-        fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
-            name='Events'))
+            fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
+                name=event))
 
 
     fig.show()
+    return fig
 

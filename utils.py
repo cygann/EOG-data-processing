@@ -68,6 +68,7 @@ def plot_data_plotly(data, fig, label=None, xlabel='sample # (sample rate: 30kHz
     fig.update_layout(xaxis_title=xlabel, yaxis_title=ylabel)
     # fig.show()
 
+
 def save_comments_to_csv(comments, pathname):
     df = pd.DataFrame(comments)
     df.to_csv(pathname, index=False)

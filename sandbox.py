@@ -1,5 +1,6 @@
 import os
 from tqdm import tqdm
+import pickle
 
 import numpy as np
 import scipy.io as sio
@@ -9,9 +10,41 @@ import utils as util
 DATA_DIR = "blackrock_data/mat_files"
 COND_DIR = "blackrock_data/conditions"
 
-REC_IDS = ['001', '003', '006', '007', '009', '011', '012', '013']
+DATA_OBJ_DIR = "data_obj/"
+
+
+def save_recordings_object(recs, filename):
+    """
+    Saves the recordings object recs to the specified filename in the
+    DATA_OBJ_DIR path.
+    """
+    outpath = os.path.join(DATA_OBJ_DIR, filename)
+    pickle.dump(recs, open(outpath, 'wb'))
+    print("Saved recordings object to file at", outpath)
+
+def load_recordings_object(filename):
+    """
+    Loads the recordings object from the specified filename in the
+    DATA_OBJ_DIR path, and returns it
+    """
+    path = os.path.join(DATA_OBJ_DIR, filename)
+    recs = pickle.load(open(path, 'rb'))
+
+    return recs
+
+### Raw data extraction functions below ###
 
 def load_recording(rec_id):
+    """
+    Loads the raw data from blackrock NEV and NS6 files saved to .mat files. The
+    x_NEV.mat and x_NS6.mat files are read to extract the raw recording data and
+    the event conditions.
+    The event conditions are processed into a dictionary where event key
+    strings, such as "scent 20" map to another dictionary with 'start' and 'end'
+    keys, which each map to the raw data timestamp associated with it.
+
+    Returns raw data numpy array and dict of event conditions.
+    """
 
     NEV_FILENAME = "OE_recording_Blackrock" + rec_id + "_NEV.mat"
     NSX_FILENAME = "OE_recording_Blackrock" + rec_id + "_NS6.mat"
@@ -37,6 +70,8 @@ def load_recording(rec_id):
         cond = util.find_condition_endpoints(comments)
 
     return data, cond
+
+REC_IDS = ['001', '003', '006', '007', '009', '011', '012', '013']
 
 def load_all_recordings():
     """
