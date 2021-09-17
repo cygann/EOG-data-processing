@@ -5,4 +5,4 @@
 mat_files/
 blackrock_data/
 interactive/
-data_obj/
+data_obj/*
