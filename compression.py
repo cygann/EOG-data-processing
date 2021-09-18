@@ -11,6 +11,32 @@ from tqdm import tqdm
 
 import utils as util
 
+def compression_pyramid(data):
+    """
+    Compression experiment of varied size window increments.
+    """
+
+    inc_vals = [100, 1000, 4000, 7000, 10000, 15000, 20000, 25000]
+    results = []
+
+    for v in inc_vals:
+        comp_rat, timestamps = compress_recording(data, window_size=90000,
+                sliding=True, inc=v)
+        results.append((comp_rat, timestamps))
+
+    return results
+
+def plot_compression_pyramid(results, show=True):
+
+    fig = go.Figure()
+
+    for i, res in enumerate(results):
+        comp_rats, tstmps = res
+        plot_ratios(comp_rats, tstmps, show=False, fig=fig, 
+                line_name='Compression ratio ' + str(i))
+    
+    if show: fig.show()
+    return fig
 
 def compress_recording(data, window_size=90000, sliding=False, inc=4000):
     """
@@ -74,21 +100,29 @@ def compress_recording(data, window_size=90000, sliding=False, inc=4000):
     
     return comp_ratios, timestamps
 
-def plot_ratios(ratios, timestamps, events=None):
+def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
+        line_name=None):
 
     np_ratios = np.asarray(ratios)
     np_tstamps = np.asarray(timestamps)
-    fig = go.Figure()
     n = np_ratios.shape[0]
 
+
+    if fig is None:
+        fig = go.Figure()
+
+    if line_name is None:
+        line_name = 'Compression ratio (gz size / raw size)'
+
     fig.add_trace(go.Scatter(x=np_tstamps, y=np_ratios, 
-        name='Compression ratio (gz size / raw size)',
+        name=line_name,
         mode='markers'))
 
     fig.update_layout(title='Compressibility over EOG recording',
                         yaxis_title='Compressibility ratio (gz size / raw size)',
                         xaxis_title='Recording sample window start')
 
+    # Plot events as well
     if events is not None:
         min_y = np.min(np_ratios)
 
@@ -102,7 +136,7 @@ def plot_ratios(ratios, timestamps, events=None):
                 name=event))
 
 
-    fig.show()
+    if show: fig.show()
     return fig
 
 def compression_experiment(recs, keys):
