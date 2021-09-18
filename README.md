@@ -13,7 +13,7 @@ import loader
 ... etc
 ```
 ## Data exploration
-For data already extrated from MATLAB files and post-processed with event labels & timestamps, this can be loaded from file. Check the `data_obj/` directory for saved recording objects. To load such files, run:
+For data already extrated from MATLAB files and post-processed with event labels & timestamps, this can be loaded from file. Check the `data_obj/` directory for saved recording objects (you may have to create `data_obj/` and add desired files to it as these files are too large to be tracked by github). To load such files, run:
 
 ```
 import loader
