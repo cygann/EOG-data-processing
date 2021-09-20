@@ -17,19 +17,20 @@ def compression_pyramid(data):
     """
 
     inc_vals = [100, 1000, 4000, 7000, 10000, 15000, 20000, 25000]
-    inc_vals = [1000, 4000, 7000, 10000, 15000, 20000, 25000]
+    window_vals = [2000, 5000, 10000, 15000, 20000, 30000, 60000, 90000, 120000]
     results = []
 
-    for v in inc_vals:
-        print("Compressing data with increment value " + str(v))
-        comp_rat, timestamps = compress_recording(data, window_size=90000,
-                sliding=True, inc=v)
-        name = "Increment size " + str(v)
+    # for v in inc_vals:
+    for w in window_vals:
+        print("Compressing data with increment value " + str(w))
+        comp_rat, timestamps = compress_recording(data, window_size=w,
+                sliding=True, inc=7000)
+        name = "Window size " + str(w)
         results.append((comp_rat, timestamps, name))
 
     return results
 
-def plot_compression_pyramid(results, show=True):
+def plot_compression_pyramid(results, show=True, events=None):
 
     fig = go.Figure()
 
@@ -37,6 +38,19 @@ def plot_compression_pyramid(results, show=True):
         comp_rats, tstmps, name = res
         plot_ratios(comp_rats, tstmps, show=False, fig=fig, 
                 line_name=name)
+
+    # Plot events as well
+    if events is not None:
+        min_y = np.min(results[0][0])
+
+        for event in events:
+            xvals = []
+
+            xvals.append(events[event]['start'])
+            xvals.append(events[event]['end'])
+
+            fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
+                name=event))
     
     if show: fig.show()
     return fig
