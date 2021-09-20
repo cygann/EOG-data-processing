@@ -17,12 +17,15 @@ def compression_pyramid(data):
     """
 
     inc_vals = [100, 1000, 4000, 7000, 10000, 15000, 20000, 25000]
+    inc_vals = [1000, 4000, 7000, 10000, 15000, 20000, 25000]
     results = []
 
     for v in inc_vals:
+        print("Compressing data with increment value " + str(v))
         comp_rat, timestamps = compress_recording(data, window_size=90000,
                 sliding=True, inc=v)
-        results.append((comp_rat, timestamps))
+        name = "Increment size " + str(v)
+        results.append((comp_rat, timestamps, name))
 
     return results
 
@@ -31,9 +34,9 @@ def plot_compression_pyramid(results, show=True):
     fig = go.Figure()
 
     for i, res in enumerate(results):
-        comp_rats, tstmps = res
+        comp_rats, tstmps, name = res
         plot_ratios(comp_rats, tstmps, show=False, fig=fig, 
-                line_name='Compression ratio ' + str(i))
+                line_name=name)
     
     if show: fig.show()
     return fig
