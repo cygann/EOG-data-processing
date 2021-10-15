@@ -84,11 +84,9 @@ def process_all_nev_to_csv(data_dir='blackrock_data/mat_files'):
         comment_path = "OE_recording_Blackrock" + num + "_comments.csv"
         save_comments_to_csv(comments, comment_path)
 
-def load_comments_from_csv(filename, path='blackrock_data/comment_csv/'):
-
-    fullpath = os.path.join(path, filename)
-    df = pd.read_csv(fullpath)
-    comments = df.to_dict()
+def load_comments_from_csv(path):
+    df = pd.read_csv(path)
+    comments = df.to_dict('list')
 
     return comments
 
@@ -96,11 +94,11 @@ def find_condition_endpoints(comments):
 
     conditions = {}
     prev_key = ''
-    for i in comments['text']:
+    for i, _ in enumerate(comments['text']):
         text = comments['text'][i]
         start = comments['start'][i]
         end = comments['end'][i]
-        text_l = text.lower()
+        text_l = text.lower().strip()
 
         # This indicates the start of a new scent condition
         if 'scent' in text_l:
@@ -118,12 +116,13 @@ def find_condition_endpoints(comments):
 
     return conditions
 
-def save_conditions_to_file(cond, filename, outdir='blackrock_data/conditions'):
-    outpath = os.path.join(outdir, filename)
-    pickle.dump(cond, open(outpath, 'wb'))
+def save_conditions_to_file(cond, path):
+    pickle.dump(cond, open(path, 'wb'))
 
 def load_conditions_from_file(filename, cond_dir='blackrock_data/conditions'):
     outpath = os.path.join(cond_dir, filename)
+    if not os.path.exists(outpath): return None
+
     cond = pickle.load(open(outpath, 'rb'))
     return cond
 

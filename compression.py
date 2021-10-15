@@ -16,8 +16,9 @@ def compression_pyramid(data):
     Compression experiment of varied size window increments.
     """
 
-    inc_vals = [100, 1000, 4000, 7000, 10000, 15000, 20000, 25000]
-    window_vals = [2000, 5000, 10000, 15000, 20000, 30000, 60000, 90000, 120000]
+    # inc_vals = [100, 1000, 4000, 7000, 10000, 15000, 20000, 25000]
+    # window_vals = [2000, 5000, 10000, 15000, 20000, 30000, 60000, 90000, 120000]
+    window_vals = [100000, 120000, 150000]
     results = []
 
     # for v in inc_vals:
@@ -30,12 +31,15 @@ def compression_pyramid(data):
 
     return results
 
-def plot_compression_pyramid(results, show=True, events=None):
+def plot_compression_pyramid(results, show=True, events=None,
+        use_seconds=False):
 
     fig = go.Figure()
 
     for i, res in enumerate(results):
         comp_rats, tstmps, name = res
+        if use_seconds: 
+            tstmps = [t / 30000 for t in tstmps]
         plot_ratios(comp_rats, tstmps, show=False, fig=fig, 
                 line_name=name)
 
@@ -48,6 +52,9 @@ def plot_compression_pyramid(results, show=True, events=None):
 
             xvals.append(events[event]['start'])
             xvals.append(events[event]['end'])
+
+            if use_seconds: 
+                xvals = [t / 30000 for t in xvals]
 
             fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
                 name=event))

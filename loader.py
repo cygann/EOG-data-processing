@@ -1,14 +1,18 @@
 import os
 from tqdm import tqdm
 import pickle
+import pdb
 
 import numpy as np
 import scipy.io as sio
 
 import utils as util
 
-DATA_DIR = "blackrock_data/mat_files"
-COND_DIR = "blackrock_data/conditions"
+DATA_DIR = "blackrock_data/2021-10-11/mat_files"
+COND_DIR = "blackrock_data/2021-10-11/conditions"
+COMMENT_DIR = "blackrock_data/2021-10-11/comment_csv"
+
+FILEBASE = "datafile"
 
 DATA_OBJ_DIR = "data_obj/"
 
@@ -34,7 +38,7 @@ def load_recordings_object(filename):
 
 ### Raw data extraction functions below ###
 
-def load_recording(rec_id):
+def load_recording(rec_id, create_csv_only=False):
     """
     Loads the raw data from blackrock NEV and NS6 files saved to .mat files. The
     x_NEV.mat and x_NS6.mat files are read to extract the raw recording data and
@@ -46,8 +50,8 @@ def load_recording(rec_id):
     Returns raw data numpy array and dict of event conditions.
     """
 
-    NEV_FILENAME = "OE_recording_Blackrock" + rec_id + "_NEV.mat"
-    NSX_FILENAME = "OE_recording_Blackrock" + rec_id + "_NS6.mat"
+    NEV_FILENAME = FILEBASE + rec_id + "_NEV.mat"
+    NSX_FILENAME = FILEBASE + rec_id + "_NS6.mat"
 
     # Read NEV, NSX
     nev_path = os.path.join(DATA_DIR, NEV_FILENAME)
@@ -57,8 +61,17 @@ def load_recording(rec_id):
     data = util.get_data(nsx) # make data available
 
     # Read Comments from csv
-    comment_path = "OE_recording_Blackrock" + NEV_FILENAME[-11:-8] + "_comments.csv"
-    # comments = util.get_comments(nev)
+    comment_filename = FILEBASE + NEV_FILENAME[-11:-8] + "_comments.csv"
+    comment_path = os.path.join(COMMENT_DIR, comment_filename)
+
+    if not os.path.exists(COMMENT_DIR):
+        os.makedirs(COMMENT_DIR)
+
+    if create_csv_only:
+        comments = util.get_comments(nev)
+        util.save_comments_to_csv(comments, comment_path)
+        return None, None
+
     comments = util.load_comments_from_csv(comment_path)
 
     cond_file = rec_id + ".pkl"
@@ -67,22 +80,24 @@ def load_recording(rec_id):
     # If there is no conditions file saved, then auto generate the conditions 
     # from the comments
     if cond is None:
+        # pdb.set_trace()
         cond = util.find_condition_endpoints(comments)
 
     return data, cond
 
-REC_IDS = ['001', '003', '006', '007', '009', '011', '012', '013']
+# REC_IDS = ['001', '003', '006', '007', '009', '011', '012', '013']
+REC_IDS = ['001', '002', '003', '004', '005', '006']
 
-def load_all_recordings():
+def load_all_recordings(create_csv_only=False):
     """
     Reads all recordings (raw data and conditions dictionary) and returns it as
     a dictionary structure with the recording ids as keys.
     """
-
     print('Loading all recordings...')
     recordings = {}
     for rec_id in tqdm(REC_IDS):
-        data, cond = load_recording(rec_id)
+        data, cond = load_recording(rec_id, create_csv_only)
+        if create_csv_only: continue
         recordings[rec_id] = {'data': data, 'cond': cond}
 
     return recordings
