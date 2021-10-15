@@ -4,6 +4,27 @@ import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
+SAMPLE_RATE = 30000 # samples / s
+
+def matplotlib_full_raw(recs, key):
+    rec = recs[key]
+    data = rec['data']
+    events = rec['cond']
+    n = data.shape[0]
+
+    xticks = [x / SAMPLE_RATE for x in range(n)]
+    plt.plot(xticks, data, label='raw data')
+
+    for ev in events:
+        start = events[ev]['start'] / SAMPLE_RATE
+        end = events[ev]['end'] / SAMPLE_RATE
+
+        plt.plot([start, end], [-500, -500], label=ev)
+
+    plt.title('Raw data of recording ' + key)
+    # plt.legend()
+    plt.show()
+
 def plotly_raw_with_events(rec, start=None, end=None):
     """
     Plots the raw data with event conditions as line segments at the bottom.
