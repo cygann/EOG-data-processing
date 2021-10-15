@@ -11,58 +11,8 @@ from tqdm import tqdm
 
 import utils as util
 
-def compression_pyramid(data):
-    """
-    Compression experiment of varied size window increments.
-    """
 
-    # inc_vals = [100, 1000, 4000, 7000, 10000, 15000, 20000, 25000]
-    # window_vals = [2000, 5000, 10000, 15000, 20000, 30000, 60000, 90000, 120000]
-    window_vals = [100000, 120000, 150000]
-    results = []
-
-    # for v in inc_vals:
-    for w in window_vals:
-        print("Compressing data with increment value " + str(w))
-        comp_rat, timestamps = compress_recording(data, window_size=w,
-                sliding=True, inc=7000)
-        name = "Window size " + str(w)
-        results.append((comp_rat, timestamps, name))
-
-    return results
-
-def plot_compression_pyramid(results, show=True, events=None,
-        use_seconds=False):
-
-    fig = go.Figure()
-
-    for i, res in enumerate(results):
-        comp_rats, tstmps, name = res
-        if use_seconds: 
-            tstmps = [t / 30000 for t in tstmps]
-        plot_ratios(comp_rats, tstmps, show=False, fig=fig, 
-                line_name=name)
-
-    # Plot events as well
-    if events is not None:
-        min_y = np.min(results[0][0])
-
-        for event in events:
-            xvals = []
-
-            xvals.append(events[event]['start'])
-            xvals.append(events[event]['end'])
-
-            if use_seconds: 
-                xvals = [t / 30000 for t in xvals]
-
-            fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
-                name=event))
-    
-    if show: fig.show()
-    return fig
-
-def compress_recording(data, window_size=90000, sliding=False, inc=4000):
+def compress_recording(data, window_size=150000, sliding=True, inc=7000):
     """
     Compresses the raw data from a single recording using a window_size window
     of samples to include in each compression batch. 
@@ -124,11 +74,27 @@ def compress_recording(data, window_size=90000, sliding=False, inc=4000):
     
     return comp_ratios, timestamps
 
+def compress_recordings_list(recs, keys):
+
+    results = {}
+
+    for key in keys:
+        data = recs[key]['data']
+        cmp_ratios, ts = compress_recording(data)
+
+        results[key] = {}
+        results[key]['comp ratios'] = cmp_ratios
+        results[key]['timestamps'] = ts
+
+    return results
+
 def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
-        line_name=None):
+        line_name=None, sample_rate=30000):
 
     np_ratios = np.asarray(ratios)
-    np_tstamps = np.asarray(timestamps)
+
+    # Convert timestamps to seconds
+    np_tstamps = np.asarray(timestamps) / sample_rate
     n = np_ratios.shape[0]
 
 
@@ -144,7 +110,8 @@ def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
 
     fig.update_layout(title='Compressibility over EOG recording',
                         yaxis_title='Compressibility ratio (gz size / raw size)',
-                        xaxis_title='Recording sample window start')
+                        xaxis_title='Recording duration in seconds (' + \
+                            str(sample_rate) + ' samples/s')
 
     # Plot events as well
     if events is not None:
@@ -153,8 +120,8 @@ def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
         for event in events:
             xvals = []
 
-            xvals.append(events[event]['start'])
-            xvals.append(events[event]['end'])
+            xvals.append(events[event]['start'] / sample_rate)
+            xvals.append(events[event]['end'] / sample_rate)
 
             fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
                 name=event))
@@ -215,3 +182,54 @@ def plot_compression_results(result):
                         xaxis_title='Compressibility ratio (gz size / raw size)',
                         yaxis_title='Recording condition')
     fig.show()
+
+def compression_pyramid(data):
+    """
+    Compression experiment of varied size window increments.
+    """
+
+    # inc_vals = [100, 1000, 4000, 7000, 10000, 15000, 20000, 25000]
+    # window_vals = [2000, 5000, 10000, 15000, 20000, 30000, 60000, 90000, 120000]
+    window_vals = [100000, 120000, 150000]
+    results = []
+
+    # for v in inc_vals:
+    for w in window_vals:
+        print("Compressing data with increment value " + str(w))
+        comp_rat, timestamps = compress_recording(data, window_size=w,
+                sliding=True, inc=7000)
+        name = "Window size " + str(w)
+        results.append((comp_rat, timestamps, name))
+
+    return results
+
+def plot_compression_pyramid(results, show=True, events=None,
+        use_seconds=False):
+
+    fig = go.Figure()
+
+    for i, res in enumerate(results):
+        comp_rats, tstmps, name = res
+        if use_seconds: 
+            tstmps = [t / 30000 for t in tstmps]
+        plot_ratios(comp_rats, tstmps, show=False, fig=fig, 
+                line_name=name)
+
+    # Plot events as well
+    if events is not None:
+        min_y = np.min(results[0][0])
+
+        for event in events:
+            xvals = []
+
+            xvals.append(events[event]['start'])
+            xvals.append(events[event]['end'])
+
+            if use_seconds: 
+                xvals = [t / 30000 for t in xvals]
+
+            fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
+                name=event))
+    
+    if show: fig.show()
+    return fig
