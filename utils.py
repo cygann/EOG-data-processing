@@ -104,15 +104,22 @@ def find_condition_endpoints(comments):
         if 'scent' in text_l:
             # The end time for the scent comment indicates the time at which the
             # smell was presented
+            if text_l in conditions.keys():
+                text_l = text_l + ' i'
+
+            # The end time for the scent comment indicates the time at which the
+            # smell was presented
             conditions[text_l] = {}
             conditions[text_l]['start'] = end
             prev_key = text_l
 
         # This indicates the point in which the scent stimuli was removed
         elif 'removed' in text_l:
-            # The start time for the 'Removed' comment indicates the time at
+            # August 08 recording: The start time for the 'Removed' comment indicates the time at
             # which the smell was removed.
-            conditions[prev_key]['end'] = start
+            # October 10 recording: The end time for the 'Removed' comment indicates the time at
+            # which the smell was removed.
+            conditions[prev_key]['end'] = end
 
     return conditions
 
@@ -296,4 +303,9 @@ def custom_condition_keys(recs):
 
     return new_keys
 
+def get_duration(item):
 
+    start = item['start']
+    end = item['end']
+
+    return end - start
