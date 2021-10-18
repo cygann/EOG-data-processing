@@ -68,7 +68,7 @@ def compress_recording(data, window_size=150000, sliding=True, inc=7000):
             ratio = size_gz / size_raw
 
             comp_ratios.append(ratio)
-            timestamps.append(start)
+            timestamps.append(start + window_size)
             start += inc
 
     
@@ -88,10 +88,18 @@ def compress_recordings_list(recs, keys):
 
     return results
 
+def plot_ratios_key(results, key, events=None, show=True, fig=None,
+        line_name=None, sample_rate=30000):
+
+    ratios = results[key]['comp ratios']
+    tstamps = results[key]['timestamps']
+    return plot_ratios(ratios, tstamps, events=events, show=show, fig=fig,
+        line_name=line_name, sample_rate=sample_rate)
+
 def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
         line_name=None, sample_rate=30000):
 
-    np_ratios = np.asarray(ratios)
+    np_ratios =  np.asarray(ratios)
 
     # Convert timestamps to seconds
     np_tstamps = np.asarray(timestamps) / sample_rate
@@ -109,22 +117,36 @@ def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
         mode='markers'))
 
     fig.update_layout(title='Compressibility over EOG recording',
-                        yaxis_title='Compressibility ratio (gz size / raw size)',
+                        yaxis_title='Compressibility Ratio (gz size / raw size)',
                         xaxis_title='Recording duration in seconds (' + \
                             str(sample_rate) + ' samples/s')
 
     # Plot events as well
     if events is not None:
         min_y = np.min(np_ratios)
+        max_y = np.max(np_ratios)
 
         for event in events:
             xvals = []
 
             xvals.append(events[event]['start'] / sample_rate)
             xvals.append(events[event]['end'] / sample_rate)
+            xvals.append(events[event]['end'] / sample_rate)
+            xvals.append(events[event]['start'] / sample_rate)
 
-            fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
-                name=event))
+            yvals = np.ones(len(xvals)) * min_y
+            yvals[0] = max_y
+            yvals[1] = max_y
+
+            color = None
+            if 'sham' in event:
+                color = 'rgba(60, 60, 60, .3)'
+            else:
+                color = 'rgba(20, 200, 250, .2)'
+
+            fig.add_trace(go.Scatter(x=xvals, y=yvals, 
+                name=event, fill='toself', mode='markers', marker_color=color,
+                fillcolor=color))
 
 
     if show: fig.show()
