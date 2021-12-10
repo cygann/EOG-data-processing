@@ -6,14 +6,27 @@ import matplotlib.pyplot as plt
 
 SAMPLE_RATE = 30000 # samples / s
 
-def matplotlib_full_raw(recs, key):
+def spec_plot(Sxx, t, f, events=None):
+    plt.pcolormesh(t, f, np.log(Sxx))
+
+    if events is not None:
+        for ev in events:
+            plt.axvline(events[ev]['start'] / 30000, color='white', linewidth=0.5)
+
+    plt.show()
+
+def matplotlib_full_raw(recs, key, show=True, new_data=None):
     rec = recs[key]
     data = rec['data']
     events = rec['cond']
     n = data.shape[0]
 
-    xticks = [x / SAMPLE_RATE for x in range(n)]
-    plt.plot(xticks, data, label='raw data')
+    if new_data is not None:
+        xticks = [x / SAMPLE_RATE for x in range(new_data.shape[0])]
+        plt.plot(xticks, new_data, label='raw data')
+    else:
+        xticks = [x / SAMPLE_RATE for x in range(n)]
+        plt.plot(xticks, data, label='raw data')
 
     for ev in events:
         start = events[ev]['start'] / SAMPLE_RATE
@@ -22,6 +35,21 @@ def matplotlib_full_raw(recs, key):
         plt.plot([start, end], [-500, -500], label=ev)
 
     plt.title('Raw data of recording ' + key)
+    plt.ylabel('voltage (uV)')
+    plt.xlabel('Time into recording (seconds)')
+    # plt.legend()
+    if show: plt.show()
+    return 
+
+def matplotlib_snippet(data, start_s, end_s, key=None):
+    n = data.shape[0]
+
+    xticks = [(x / SAMPLE_RATE) + (start_s * SAMPLE_RATE) for x in range(n)]
+    plt.plot(xticks, data, label='raw data')
+
+    plt.title('Raw data of recording ' + str(key))
+    plt.ylabel('voltage (uV)')
+    plt.xlabel('Time into recording (seconds)')
     # plt.legend()
     plt.show()
 

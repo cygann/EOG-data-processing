@@ -104,7 +104,7 @@ def find_condition_endpoints(comments):
         if 'scent' in text_l:
             # The end time for the scent comment indicates the time at which the
             # smell was presented
-            if text_l in conditions.keys():
+            while text_l in conditions.keys():
                 text_l = text_l + ' i'
 
             # The end time for the scent comment indicates the time at which the

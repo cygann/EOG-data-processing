@@ -89,10 +89,14 @@ def compress_recordings_list(recs, keys):
     return results
 
 def plot_ratios_key(results, key, events=None, show=True, fig=None,
-        line_name=None, sample_rate=30000):
+        line_name=None, sample_rate=30000, start_s=None):
 
     ratios = results[key]['comp ratios']
     tstamps = results[key]['timestamps']
+    if start_s is not None:
+        idx = np.argmin(np.abs(np.asarray(tstamps) - start_s * sample_rate))
+        ratios = ratios[idx:]
+        tstamps = np.asarray(tstamps[idx:]) - start_s * sample_rate
     return plot_ratios(ratios, tstamps, events=events, show=show, fig=fig,
         line_name=line_name, sample_rate=sample_rate)
 
