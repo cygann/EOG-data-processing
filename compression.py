@@ -123,7 +123,7 @@ def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
     fig.update_layout(title='Compressibility over EOG recording',
                         yaxis_title='Compressibility Ratio (gz size / raw size)',
                         xaxis_title='Recording duration in seconds (' + \
-                            str(sample_rate) + ' samples/s')
+                            str(sample_rate) + ' samples/s)')
 
     # Plot events as well
     if events is not None:
