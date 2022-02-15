@@ -17,6 +17,6 @@ nsx_fname = strcat(NS6.MetaTags.Filename, '_NS6');
 
 % Save the corresponding .mat files for each of these structures.
 save(strcat(nev_fname, '.mat'), 'NEV');
-save(strcat(nsx_fname, '.mat'), 'NS6');
+save(strcat(nsx_fname, '.mat'), 'NS6', '-v7.3');
 
 disp("Saved .mat files for the NEV and NS6 objects.");
