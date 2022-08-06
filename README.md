@@ -4,6 +4,22 @@
 ## Dependencies
 `pip install -r requirements.txt`
 
+## Compression sliding windows over time
+
+To compute the compressibility over time for a time-series data array:
+
+```
+from compression import get_compression_ratios_for_array, plot_compression_ratios
+
+# Where data is a numpy n x m array:
+result = get_compression_ratios_for_array(data, window_size=5000, inc=400)
+
+plot_compression_ratios(result[:,0], result[:,1])  # Plot will appear in browser
+```
+
+Refer to the docstring in `compression.py:get_compression_ratios_for_array` for more details.
+
+
 ## Usage
 Each python file have different modules that can be used in an interactive python environment (jupyter notebook, ipython session, etc.). Simply import each module you wish to use as such:
 ```
@@ -46,6 +62,6 @@ viz.plotly_raw_with_events(rec_006, rec_006['cond']['scent 31']['start'], rec_00
 ```
 
 ## Blackrock data object extraction with MATLAB
-Blackrock has a library called [NPMK](https://github.com/BlackrockMicrosystems/NPMK) that contains dataloaders for their custom data structures of NEV and NSx files. The script `preproc.m` contains a script that will read one set of NEV and NSx files and save them as `.mat` such that they can be used for further MATLAB or Python processing. 
+Blackrock has a library called [NPMK](https://github.com/BlackrockMicrosystems/NPMK) that contains dataloaders for their custom data structures of NEV and NSx files. The script `preproc.m` contains a script that will read one set of NEV and NSx files and save them as `.mat` such that they can be used for further MATLAB or Python processing.
 
 To perform this step, make sure to clone the [NPMK repository](https://github.com/BlackrockMicrosystems/NPMK) and add it to your MATLAB path. Now run the `preproc.m` script for every set of `.nev` and `.nsx` files that you have. For further instructions on using NPMK, check out [Blackrock's NPMK tutorial video](https://www.youtube.com/watch?v=amPdC7mW68I).
