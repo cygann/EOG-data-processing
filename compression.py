@@ -1,114 +1,151 @@
 """
-Script for compression experiment. 
+Script for compression experiment.
 """
+from functools import partial
+from multiprocessing import cpu_count
 from pathlib import Path
 import gzip
 import pdb
+from typing import Any, Optional, Dict
 
 import numpy as np
+import numpy.typing as npt
 import plotly.graph_objects as go
-from tqdm import tqdm
-
-import utils as util
+from tqdm.contrib.concurrent import process_map
 
 
-def compress_recording(data, window_size=150000, sliding=True, inc=7000):
+def get_compression_ratios_for_array(
+    data,
+    window_size: int = 20000,
+    inc: int = 9000,
+    method: str = "gzip"
+) -> npt.NDArray:
     """
-    Compresses the raw data from a single recording using a window_size window
-    of samples to include in each compression batch. 
-    Can operate with or without sliding window. For sliding window, the inc
-    argument represents the window increment between subsequent compression
-    batches.
+    Computes a time-series of compression ratios for the provided data array
 
-    Returns a list of compression ratios and a list of sample # timestamps that
-    correspond to the compression ratios. For example, for comp_ratios[i], this
-    compression sample was started at sample number timestamps[i] and included
-    inc samples of data.
+    Example:
+        For an array of lenth (N x 1) and window_size=w, inc=i, we compress
+        each set of w samples that are spaced i samples apart and find
+        compression ratios for them.
+
+                0 1 2 3 4 5 6 7 8 9
+        data = [][][][][][][][][][][][][][][][][][][][][][][]
+              {    _     }
+                   |  {    _     }
+                   |       |  {    _     }    ...
+                   V       |       |
+                  .32      V       |
+                          .37      V
+                                  .43
+
+        The output would be:
+            [[.32, w],
+             [.37, w + i],
+             [.43, w + 2 * i],
+             ...]
+
+    Args:
+        data: A (N x M x ...) Numpy array of data to compress. Compression
+            windows are performed along the first dimension.
+        window_size: Size of window over which to compression and compute a
+            compression ratio for.
+        window_inc: By how many samples to increment the start of a subequent
+            compression window.
+
+    Returns:
+        A (N // inc x 2) numpy array where the first column contains compression
+        ratios that correspond to the sample indexes in the second column.
+        For an input array N, a result array R, and w as the width of the
+        compression window, then the compression ratio at R[n, 0] is the
+        "compressibility" of the w samples preceeding the sample at
+        N[R[n, 1], ::]. The second column of the result array then represents
+        indexes into the original array.
     """
 
-    comp_ratios = []
-    timestamps = []
+    num_slices = data.shape[0] // inc
 
-    num_slices = data.shape[0] // window_size
+    result = np.zeros((num_slices, 2))
+    # Second column will contain the sample "timestamps" that each compression
+    # ratio in the first column corresponds to.
+    result[:,1] = (np.arange(num_slices) * inc) + window_size
 
-    if not sliding:
-        for i in tqdm(range(num_slices)):
+    # Prepare data slices for compression.
+    data = data.astype('float32')
+    slices = []
+    for i in range(num_slices):
+        data_slice = data[i * inc:i * inc + window_size]
+        slices.append(data_slice)
 
-            # Snip data slice, convert to bytes
-            data_slice = data[i * window_size: i * window_size + window_size]
-            data_slice = data_slice.astype('float32')
-            data_bytes = data_slice.tobytes()
+    # Compress all the data slices and derive compression ratios for them.
+    func = partial(get_compression_ratio_for_slice, method)
+    compression_ratios = process_map(func, slices, max_workers=cpu_count())
+    result[:,0] = np.asarray(compression_ratios)
 
-            # Compress
-            data_bytes_compressed = gzip.compress(data_bytes)
+    return result
 
-            # Get raw size, ratio size
-            size_raw = len(data_bytes)
-            size_gz = len(data_bytes_compressed)
-            ratio = size_gz / size_raw
 
-            comp_ratios.append(ratio)
-            timestamps.append(i * window_size)
+def get_compression_ratio_for_slice(
+    method: str,
+    data_slice: npt.NDArray[np.float32]
+) -> float:
+    """
+
+    Computes the compression ratio for the provided slice:
+        compression ratio = compressed size / raw size
+
+    Args:
+        method: Which compression method to use.
+        data_slice: numpy array of data to use.
+
+    Returns:
+        The compression ratio for the data slice.
+    """
+    data_bytes = data_slice.tobytes()
+
+    # Compress
+    if method == "gzip":
+        data_bytes_compressed = gzip.compress(data_bytes)
     else:
-        start = 0
-        num_slices = data.shape[0] // inc
+        raise ValueError("Unsupported compression method.")
 
-        for i in tqdm(range(num_slices)):
-            # Snip data slice, convert to bytes
-            data_slice = data[start:start + window_size]
-            data_slice = data_slice.astype('float32')
-            data_bytes = data_slice.tobytes()
+    # Get raw size, ratio size
+    size_raw = len(data_bytes)
+    size_gz = len(data_bytes_compressed)
+    ratio = size_gz / size_raw
 
-            # Compress
-            data_bytes_compressed = gzip.compress(data_bytes)
+    return ratio
 
-            # Get raw size, ratio size
-            size_raw = len(data_bytes)
-            size_gz = len(data_bytes_compressed)
-            ratio = size_gz / size_raw
 
-            comp_ratios.append(ratio)
-            timestamps.append(start + window_size)
-            start += inc
+def plot_compression_ratios(
+    compression_ratios,
+    compression_sample_idxs,
+    show=True,
+    fig=None,
+    line_name: Optional[str] = None,
+    sample_rate: int = 1,
+    events: Optional[Dict[str, Any]] = None
+):
+    """
+    Args:
+        compression_ratios: N x 1 array of compression ratios
+        compression_sample_idxs: N x 1 array containing the sample indexes that
+            correspond to the compression ratios.
+        show: Whether to display the plot at the end of this function.
+        fig: Previous plotly figure that this plot result can be appended to.
+        line_name: Name for the line drawn by the provided compression ratios.
+        sample_rate: Sample rate of the provided data (samples per second).
+        events: An optional dictionary of events to mark on the plot. This
+            should be a dicionary where each key is the name of an event, and
+            it maps to another dictionary containing the 'start' and 'end'
+            keys, where 'start' and 'end' are integer sample indexes.
 
-    
-    return comp_ratios, timestamps
+    Returns:
+        A plotly graph object.
+    """
 
-def compress_recordings_list(recs, keys):
-
-    results = {}
-
-    for key in keys:
-        data = recs[key]['data']
-        cmp_ratios, ts = compress_recording(data)
-
-        results[key] = {}
-        results[key]['comp ratios'] = cmp_ratios
-        results[key]['timestamps'] = ts
-
-    return results
-
-def plot_ratios_key(results, key, events=None, show=True, fig=None,
-        line_name=None, sample_rate=30000, start_s=None):
-
-    ratios = results[key]['comp ratios']
-    tstamps = results[key]['timestamps']
-    if start_s is not None:
-        idx = np.argmin(np.abs(np.asarray(tstamps) - start_s * sample_rate))
-        ratios = ratios[idx:]
-        tstamps = np.asarray(tstamps[idx:]) - start_s * sample_rate
-    return plot_ratios(ratios, tstamps, events=events, show=show, fig=fig,
-        line_name=line_name, sample_rate=sample_rate)
-
-def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
-        line_name=None, sample_rate=30000):
-
-    np_ratios =  np.asarray(ratios)
-
-    # Convert timestamps to seconds
-    np_tstamps = np.asarray(timestamps) / sample_rate
-    n = np_ratios.shape[0]
-
+    # Convert the sample indexes to seconds for the provided sample rate.
+    np_tstamps = np.asarray(compression_sample_idxs) / sample_rate
+    n = compression_ratios.shape[0]
 
     if fig is None:
         fig = go.Figure()
@@ -116,14 +153,19 @@ def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
     if line_name is None:
         line_name = 'Compression ratio (gz size / raw size)'
 
-    fig.add_trace(go.Scatter(x=np_tstamps, y=np_ratios, 
-        name=line_name,
-        mode='markers'))
+    fig.add_trace(
+        go.Scatter(
+            x=np_tstamps, y=compression_ratios,
+            name=line_name, mode='markers'
+        )
+    )
 
-    fig.update_layout(title='Compressibility over EOG recording',
-                        yaxis_title='Compressibility Ratio (gz size / raw size)',
-                        xaxis_title='Recording duration in seconds (' + \
-                            str(sample_rate) + ' samples/s)')
+    fig.update_layout(
+        title='Compressibility over Recording',
+        yaxis_title='Compressibility Ratio (gz size / raw size)',
+        xaxis_title='Recording duration in seconds (' + \
+            str(sample_rate) + ' samples/s)'
+    )
 
     # Plot events as well
     if events is not None:
@@ -142,120 +184,19 @@ def plot_ratios(ratios, timestamps, events=None, show=True, fig=None,
             yvals[0] = max_y
             yvals[1] = max_y
 
-            color = None
-            if 'sham' in event:
-                color = 'rgba(60, 60, 60, .3)'
-            else:
-                color = 'rgba(20, 200, 250, .2)'
+            color = 'rgba(20, 200, 250, .2)'
 
-            fig.add_trace(go.Scatter(x=xvals, y=yvals, 
-                name=event, fill='toself', mode='markers', marker_color=color,
-                fillcolor=color))
+            fig.add_trace(
+                go.Scatter(
+                    x=xvals,
+                    y=yvals,
+                    name=event,
+                    fill='toself',
+                    mode='markers',
+                    marker_color=color,
+                    fillcolor=color
+                )
+            )
 
-
-    if show: fig.show()
-    return fig
-
-def compression_experiment(recs, keys):
-    """
-    Original compression test experiment.
-    Compresses data slices corresponding to all specified keys 
-    """
-
-    compression_results = {}
-
-    min_length = util.get_min_length(recs, keys)
-
-    for rec_id in keys:
-        for cond in keys[rec_id]:
-            data_slice = util.get_condition_slice(recs[rec_id]['cond'], cond,
-                    recs[rec_id]['data'])[:min_length]
-
-            data_slice = data_slice.astype('float32')
-
-            data_bytes = data_slice.tobytes()
-            data_bytes_compressed = gzip.compress(data_bytes)
-
-            size_raw = len(data_bytes)
-            size_gz = len(data_bytes_compressed)
-
-            ratio = size_gz / size_raw
-
-            print('<' + rec_id + ': ' + cond + '>: raw size: ' + str(size_raw) + \
-                    ' compressed size: ' + str(size_gz) + ' ratio: ' + \
-                    str(ratio))
-
-            compression_results[rec_id + ": " + cond] = {'raw': size_raw,
-                    'comp': size_gz}
-
-    return compression_results
-
-def plot_compression_results(result):
-
-    fig = go.Figure()
-    conds = []
-    ratios = []
-    for item in result:
-        ratio = result[item]['comp'] / result[item]['raw']
-        ratios.append(ratio)
-        conds.append(item)
-
-    fig.add_trace(go.Scatter(x=ratios, y=conds, 
-        name='Compression ratio (gz size / raw size)',
-        mode='markers'))
-
-    fig.update_layout(title='Compressibility by recording condition',
-                        xaxis_title='Compressibility ratio (gz size / raw size)',
-                        yaxis_title='Recording condition')
-    fig.show()
-
-def compression_pyramid(data):
-    """
-    Compression experiment of varied size window increments.
-    """
-
-    # inc_vals = [100, 1000, 4000, 7000, 10000, 15000, 20000, 25000]
-    # window_vals = [2000, 5000, 10000, 15000, 20000, 30000, 60000, 90000, 120000]
-    window_vals = [100000, 120000, 150000]
-    results = []
-
-    # for v in inc_vals:
-    for w in window_vals:
-        print("Compressing data with increment value " + str(w))
-        comp_rat, timestamps = compress_recording(data, window_size=w,
-                sliding=True, inc=7000)
-        name = "Window size " + str(w)
-        results.append((comp_rat, timestamps, name))
-
-    return results
-
-def plot_compression_pyramid(results, show=True, events=None,
-        use_seconds=False):
-
-    fig = go.Figure()
-
-    for i, res in enumerate(results):
-        comp_rats, tstmps, name = res
-        if use_seconds: 
-            tstmps = [t / 30000 for t in tstmps]
-        plot_ratios(comp_rats, tstmps, show=False, fig=fig, 
-                line_name=name)
-
-    # Plot events as well
-    if events is not None:
-        min_y = np.min(results[0][0])
-
-        for event in events:
-            xvals = []
-
-            xvals.append(events[event]['start'])
-            xvals.append(events[event]['end'])
-
-            if use_seconds: 
-                xvals = [t / 30000 for t in xvals]
-
-            fig.add_trace(go.Scatter(x=xvals, y=np.ones(len(xvals)) * min_y, 
-                name=event))
-    
     if show: fig.show()
     return fig
